@@ -283,9 +283,6 @@ define([
             batchTableResources.setBatchTable(batchTableJson, batchTableBinary);
         }
 
-        // TODO: Right now batchTableResources doesn't support binary
-        byteOffset += batchTableBinaryByteLength;
-
         var gltfByteLength = byteStart + byteLength - byteOffset;
         //>>includeStart('debug', pragmas.debug);
         if (gltfByteLength === 0) {
