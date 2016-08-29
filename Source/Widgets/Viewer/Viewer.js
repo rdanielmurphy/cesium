@@ -40,6 +40,7 @@ define([
         '../NavigationHelpButton/NavigationHelpButton',
         '../SceneModePicker/SceneModePicker',
         '../SelectionIndicator/SelectionIndicator',
+        '../InfoBoxLine/InfoBoxLine',
         '../subscribeAndEvaluate',
         '../Timeline/Timeline',
         '../VRButton/VRButton'
@@ -84,6 +85,7 @@ define([
         NavigationHelpButton,
         SceneModePicker,
         SelectionIndicator,
+        InfoBoxLine,
         subscribeAndEvaluate,
         Timeline,
         VRButton) {
@@ -194,6 +196,7 @@ define([
         var fullscreenButton = viewer._fullscreenButton;
         var infoBox = viewer._infoBox;
         var selectionIndicator = viewer._selectionIndicator;
+        var infoBoxLine = viewer._infoBoxLine;
 
         var visibility = enabled ? 'hidden' : 'visible';
 
@@ -225,6 +228,10 @@ define([
             selectionIndicator.container.style.visibility = visibility;
         }
 
+        if (defined(infoBoxLine)) {
+            infoBoxLine.container.style.visibility = visibility;
+        }
+
         if (viewer._container) {
             var right = enabled || !defined(fullscreenButton) ? 0 : fullscreenButton.container.clientWidth;
             viewer._vrButton.container.style.right = right + 'px';
@@ -251,6 +258,7 @@ define([
      * @param {Boolean} [options.infoBox=true] If set to false, the InfoBox widget will not be created.
      * @param {Boolean} [options.sceneModePicker=true] If set to false, the SceneModePicker widget will not be created.
      * @param {Boolean} [options.selectionIndicator=true] If set to false, the SelectionIndicator widget will not be created.
+     * @param {Boolean} [options.infoBoxLine=true] If set to false, the InfoBoxLine widget will not be created.
      * @param {Boolean} [options.timeline=true] If set to false, the Timeline widget will not be created.
      * @param {Boolean} [options.navigationHelpButton=true] If set to false, the navigation help button will not be created.
      * @param {Boolean} [options.navigationInstructionsInitiallyVisible=true] True if the navigation instructions should initially be visible, or false if the should not be shown until the user explicitly clicks the button.
@@ -447,8 +455,9 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
             selectionIndicator = new SelectionIndicator(selectionIndicatorContainer, cesiumWidget.scene);
         }
 
-        // Info Box
+        // Info Box and Info Box Line
         var infoBox;
+        var infoBoxLine;
         if (!defined(options.infoBox) || options.infoBox !== false) {
             var infoBoxContainer = document.createElement('div');
             infoBoxContainer.className = 'cesium-viewer-infoBoxContainer';
@@ -458,6 +467,13 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
             var infoBoxViewModel = infoBox.viewModel;
             eventHelper.add(infoBoxViewModel.cameraClicked, Viewer.prototype._onInfoBoxCameraClicked, this);
             eventHelper.add(infoBoxViewModel.closeClicked, Viewer.prototype._onInfoBoxClockClicked, this);
+
+            if (!defined(options.infoBoxLine) || options.infoBoxLine !== false) {
+                var infoBoxLineContainer = document.createElement('div');
+                infoBoxLineContainer.className = 'cesium-viewer-infoBoxLineContainer';
+                viewerContainer.appendChild(infoBoxLineContainer);
+                infoBoxLine = new InfoBoxLine(infoBoxLineContainer, infoBoxContainer, cesiumWidget.scene);
+            }
         }
 
         // Main Toolbar
@@ -631,6 +647,7 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
         this._element = viewerContainer;
         this._cesiumWidget = cesiumWidget;
         this._selectionIndicator = selectionIndicator;
+        this._infoBoxLine = infoBoxLine;
         this._infoBox = infoBox;
         this._dataSourceCollection = dataSourceCollection;
         this._destroyDataSourceCollection = destroyDataSourceCollection;
@@ -651,7 +668,7 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
         this._lastHeight = 0;
         this._allowDataSourcesToSuspendAnimation = true;
         this._entityView = undefined;
-        this._enableInfoOrSelection = defined(infoBox) || defined(selectionIndicator);
+        this._enableInfoOrSelection = defined(infoBox) || defined(selectionIndicator) || defined(infoBoxLine);
         this._clockTrackedDataSource = undefined;
         this._trackedEntity = undefined;
         this._needTrackedEntityUpdate = false;
@@ -754,6 +771,18 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
         selectionIndicator : {
             get : function() {
                 return this._selectionIndicator;
+            }
+        },
+
+        /**
+         * Gets the selection indicator.
+         * @memberof Viewer.prototype
+         * @type {InfoBoxLine}
+         * @readonly
+         */
+        infoBoxLine : {
+            get : function() {
+                return this._infoBoxLine;
             }
         },
 
@@ -1208,6 +1237,18 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
                             selectionIndicatorViewModel.animateDepart();
                         }
                     }
+
+                    var infoBoxLineViewModel = defined(this._infoBoxLine) ? this._infoBoxLine.viewModel : undefined;
+                    if (defined(value)) {
+                        if (defined(infoBoxLineViewModel)) {
+                            infoBoxLineViewModel.animateAppear();
+                        }
+                    } else {
+                        // Leave the info text in place here, it is needed during the exit animation.
+                        if (defined(infoBoxLineViewModel)) {
+                            infoBoxLineViewModel.animateDepart();
+                        }
+                    }
                 }
             }
         },
@@ -1437,6 +1478,11 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
             this._selectionIndicator = this._selectionIndicator.destroy();
         }
 
+        if (defined(this._infoBoxLine)) {
+            this._element.removeChild(this._infoBoxLine.container);
+            this._infoBoxLine = this._infoBoxLine.destroy();
+        }
+
         this._clockViewModel = this._clockViewModel.destroy();
         this._dataSourceDisplay = this._dataSourceDisplay.destroy();
         this._cesiumWidget = this._cesiumWidget.destroy();
@@ -1516,6 +1562,13 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
             selectionIndicatorViewModel.position = Cartesian3.clone(position, selectionIndicatorViewModel.position);
             selectionIndicatorViewModel.showSelection = showSelection && enableCamera;
             selectionIndicatorViewModel.update();
+        }
+
+        var infoBoxLineViewModel = defined(this._infoBoxLine) ? this._infoBoxLine.viewModel : undefined;
+        if (defined(infoBoxLineViewModel)) {
+            infoBoxLineViewModel.position = Cartesian3.clone(position, infoBoxLineViewModel.position);
+            infoBoxLineViewModel.showSelection = showSelection && enableCamera;
+            infoBoxLineViewModel.update();
         }
 
         var infoBoxViewModel = defined(this._infoBox) ? this._infoBox.viewModel : undefined;
