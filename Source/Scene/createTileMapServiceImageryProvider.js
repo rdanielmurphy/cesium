@@ -46,6 +46,7 @@ define([
      * @param {Object} [options] Object with the following properties:
      * @param {String} [options.url='.'] Path to image tiles on server.
      * @param {String} [options.fileExtension='png'] The file extension for images on the server.
+	 * @param {String} [options.tilesUrlTemplate] Custom tile template URL replaces default
      * @param {Object} [options.proxy] A proxy to use for requests. This object is expected to have a getURL function which returns the proxied URL.
      * @param {Credit|String} [options.credit=''] A credit for the data source, which is displayed on the canvas.
      * @param {Number} [options.minimumLevel=0] The minimum level-of-detail supported by the imagery provider.  Take care when specifying
@@ -223,7 +224,9 @@ define([
                 minimumLevel = 0;
             }
 
-            var templateUrl = joinUrls(url, '{z}/{x}/{reverseY}.' + fileExtension);
+            if (!options.tilesUrlTemplate)
+                options.tilesUrlTemplate = '{z}/{x}/{reverseY}.' + fileExtension;
+            var templateUrl = joinUrls(url, options.tilesUrlTemplate);
 
             deferred.resolve({
                 url : templateUrl,
@@ -249,7 +252,7 @@ define([
             var tilingScheme = defined(options.tilingScheme) ? options.tilingScheme : new WebMercatorTilingScheme({ ellipsoid : options.ellipsoid });
             var rectangle = defaultValue(options.rectangle, tilingScheme.rectangle);
 
-            var templateUrl = joinUrls(url, '{z}/{x}/{reverseY}.' + fileExtension);
+            var templateUrl = joinUrls(url, options.tilesUrlTemplate);
 
             deferred.resolve({
                 url : templateUrl,
