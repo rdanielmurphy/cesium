@@ -196,6 +196,8 @@ click: function () { closeClicked.raiseEvent(this); }');
         knockout.cleanNode(this._element);
         container.removeChild(this._element);
 
+        console.log("DESTORY box");
+
         if (defined(this._descriptionSubscription)) {
             this._descriptionSubscription.dispose();
         }

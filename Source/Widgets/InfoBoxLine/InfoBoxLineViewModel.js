@@ -117,6 +117,8 @@ define([
      */
     InfoBoxLineViewModel.prototype.update = function() {
         if (this.showSelection && defined(this.position)) {
+            this._infoBoxLineElement.style.display = "inherit";
+
             var screenPosition = this.computeScreenSpacePosition(this.position, screenSpacePos);
             if (!defined(screenPosition)) {
                 this._screenPositionX = offScreen;
@@ -144,6 +146,11 @@ define([
                 this._screenPositionY = cy + 'px';
                 this._width = length + "px";
                 this._angle = "rotate(" + angle + "deg)";
+            }
+        }
+        else {
+            if (this._infoBoxLineElement) {
+                this._infoBoxLineElement.style.display = "none";
             }
         }
     };
